@@ -35,17 +35,12 @@ int comp(std::string a, std::string b)
 {
     if (a.size() == b.size())
     {
-        for (int i = 0; i < a.size(); i++)
+        if(a > b)
         {
-            if ((int)a[i]- '0' > (int)b[i]-'0')
-            {
-                return 1;
-            }
-            else if((int)a[i]- '0' < (int)b[i]-'0')
-            {
-                return -1;
-            }
+            return 1;
         }
+        else if (a < b)
+            return -1;
 
         return 0;
     }
@@ -161,12 +156,12 @@ std::string sub(std::string a, std::string b) // assume a - b
 
 std::string modulo(std::string a, std::string m) // a mod m ( a >= m && m != 0 )
 {
-    if (a.compare(m) > 0)
+    if (comp(a,m) < 0)
     {
         return a;
     }
 
-    if (m.compare("0") == 0)
+    if (comp(m,"0") == 0)
     {
         return a;
     }
