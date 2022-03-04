@@ -168,7 +168,7 @@ std::string modulo(std::string a, std::string m) // a mod m ( a >= m && m != 0 )
         return "NaN";
     }
 
-    while (comp(a, m) > 0)
+    while (comp(a, m) >= 0)
     {
         int diff = a.size() - m.size();
         if (diff != 0)
@@ -289,7 +289,7 @@ int main()
             aLen--;
         }
 
-        if (comp(aStr, mStr) != 1) {
+        if (comp(aStr, mStr) != -1) {
             cout << " * Vui long nhap a < m." << endl;
             check = false;
         }
@@ -326,7 +326,7 @@ int main()
             bLen--;
         }
 
-        if (comp(bStr, mStr) != 1) {
+        if (comp(bStr, mStr) != -1) {
             cout << " * Vui long nhap b < m." << endl;
             check = false;
         }
