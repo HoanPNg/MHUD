@@ -187,6 +187,37 @@ std::string modulo(std::string a, std::string m) // a mod m ( a >= m && m != 0 )
     return a;
 }
 
+std::string addMod(std::string a, std::string b, std::string m)
+{
+    std::string res;
+    a = modulo(a,m);
+    b = modulo(b,m);
+
+    res = add(a,b);
+    return modulo(res,m);
+}
+
+std::string mulMod(std::string a, std::string b, std::string m) // (a*b)%m
+{
+    std::string res = "0";
+    a = modulo(a, m);
+    b = modulo(b, m);
+
+    std::vector<int> vecB = toVec(b);
+    int zeroPadLength = vecB.size() - 1;
+    for (int i = 0; i < vecB.size(); i++)
+    {
+        std::string temp = a;
+        temp.append(zeroPadLength,'0');
+        temp = modulo(temp, m); 
+        for (int j = 0; j < vecB[i]; j++)
+        {
+            res = addMod(res, temp, m);
+        }
+        zeroPadLength--; }
+
+    return res;
+}
 int main()
 {
     string mStr = "", aStr = "", bStr = "";
@@ -302,6 +333,7 @@ int main()
 
     } while (!check);
     
-    cout << endl;
-    cout << modulo(aStr, bStr);
+    std::cout << "(a+b) % m = " << addMod(aStr,bStr,mStr) << std::endl;
+
+    std::cout << "(a*b) % m = " << mulMod(aStr,bStr,mStr) << std::endl;
 }
