@@ -289,7 +289,7 @@ int main()
             aLen--;
         }
 
-        if (comp(aStr, mStr) == 1) {
+        if (comp(aStr, mStr) != 1) {
             cout << " * Vui long nhap a < m." << endl;
             check = false;
         }
@@ -326,7 +326,7 @@ int main()
             bLen--;
         }
 
-        if (comp(bStr, mStr) == 1) {
+        if (comp(bStr, mStr) != 1) {
             cout << " * Vui long nhap b < m." << endl;
             check = false;
         }
