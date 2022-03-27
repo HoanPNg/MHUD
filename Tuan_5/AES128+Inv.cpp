@@ -1,4 +1,4 @@
-﻿#include<iostream>
+#include<iostream>
 #include<iomanip>
 #include<sstream>
 
@@ -137,35 +137,12 @@ string SBox16(string s, unsigned char S_box[][16]) {
 }
 
 string ShiftRows(string s) {
-	unsigned char c[16];
+	stringstream buffer;
 
-	c[0] = s[0];
-	c[1] = s[5];
-	c[2] = s[10];
-	c[3] = s[15];
-	c[4] = s[4];
-	c[5] = s[9];
-	c[6] = s[14];
-	c[7] = s[3];
-	c[8] = s[8];
-	c[9] = s[13];
-	c[10] = s[2];
-	c[11] = s[7];
-	c[12] = s[12];
-	c[13] = s[1];
-	c[14] = s[6];
-	c[15] = s[11];
-
-	//stringstream buffer;
-
-	//buffer << s[0] << s[5] << s[10] << s[15] << s[4] << s[9] << s[14]
-	//	<< s[3] << s[8] << s[13] << s[2] << s[7] << s[12] << s[1] << s[6] << s[11];
-
-	string res(c, c + 16);
-
-	return res;
-
-	//return buffer.str();
+	buffer << s[0] << s[5] << s[10] << s[15] << s[4] << s[9] << s[14]
+		<< s[3] << s[8] << s[13] << s[2] << s[7] << s[12] << s[1] << s[6] << s[11];
+	
+	return buffer.str();
 }
 
 unsigned char NhanMBox(unsigned char s, unsigned char m) {
@@ -245,10 +222,72 @@ string AES128(string K, string M, unsigned int C[], unsigned char S_box[][16], u
 	return s;
 }
 
+string InvShiftRows(string s) {
+	stringstream buffer;
+
+	buffer << s[0] << s[13] << s[10] << s[7] << s[4] << s[1] << s[14]
+		<< s[11] << s[8] << s[5] << s[2] << s[15] << s[12] << s[9] << s[6] << s[3];
+
+	return buffer.str();
+}
+
+unsigned char NhanInvMBox(unsigned char s, unsigned char m) {
+	if (m == 0x0e) {
+		return NhanMBox(NhanMBox(NhanMBox(s, 0x02), 0x02), 0x02) ^ NhanMBox(NhanMBox(s, 0x02), 0x02) ^ NhanMBox(s, 0x02);
+	}
+	if (m == 0x0b) {
+		return NhanMBox(NhanMBox(NhanMBox(s, 0x02), 0x02), 0x02) ^ NhanMBox(s, 0x02) ^ s;
+	}
+	if (m == 0x0d) {
+		return NhanMBox(NhanMBox(NhanMBox(s, 0x02), 0x02), 0x02) ^ NhanMBox(NhanMBox(s, 0x02), 0x02) ^ s;
+	}
+	return NhanMBox(NhanMBox(NhanMBox(s, 0x02), 0x02), 0x02) ^ s;
+}
+
+string InvMixColumns(string s, unsigned char Inv_M_box[][4]) {
+	string res = "";
+	for (int i = 0; i < 4; i++) {
+		// Lấy 4 byte (1 cột)
+		unsigned int col = Char16ToInts(s, i);
+
+		unsigned char s0 = (col >> 24) & 0xff;
+		unsigned char s1 = (col >> 16) & 0xff;
+		unsigned char s2 = (col >> 8) & 0xff;
+		unsigned char s3 = (col) & 0xff;
+
+		unsigned char c[4];
+
+		// Lấy từng byte nhân với bảng m box
+		c[0] = NhanInvMBox(s0, Inv_M_box[0][0]) ^ NhanInvMBox(s1, Inv_M_box[0][1]) ^ NhanInvMBox(s2, Inv_M_box[0][2]) ^ NhanInvMBox(s3, Inv_M_box[0][3]);
+		c[1] = NhanInvMBox(s0, Inv_M_box[1][0]) ^ NhanInvMBox(s1, Inv_M_box[1][1]) ^ NhanInvMBox(s2, Inv_M_box[1][2]) ^ NhanInvMBox(s3, Inv_M_box[1][3]);
+		c[2] = NhanInvMBox(s0, Inv_M_box[2][0]) ^ NhanInvMBox(s1, Inv_M_box[2][1]) ^ NhanInvMBox(s2, Inv_M_box[2][2]) ^ NhanInvMBox(s3, Inv_M_box[2][3]);
+		c[3] = NhanInvMBox(s0, Inv_M_box[3][0]) ^ NhanInvMBox(s1, Inv_M_box[3][1]) ^ NhanInvMBox(s2, Inv_M_box[3][2]) ^ NhanInvMBox(s3, Inv_M_box[3][3]);
+
+		// Đổi 4 byte vừa qua bảng m box lại thành string
+		string temp(c, c + 4);
+
+		res += temp;
+	}
+
+	return res;
+}
+
+string InvAES128(string KRes[], string s, unsigned char Inv_S_box[][16], unsigned char Inv_M_box[][4]) {
+	for (int i = 10; i > 0; i--) {
+		s = XorChar16(s, KRes[i]);
+		if (i < 10) {
+			s = InvMixColumns(s, Inv_M_box);
+		}
+		s = InvShiftRows(s);
+		s = SBox16(s, Inv_S_box);
+	}
+	s = XorChar16(s, KRes[0]);
+
+	return s;
+}
 
 int main() {
 	unsigned char S_box[16][16];
-
 	S_box[0][0] = 0x63;
 	S_box[1][0] = 0xca;
 	S_box[2][0] = 0xb7;
@@ -506,20 +545,265 @@ int main() {
 	S_box[14][15] = 0xdf;
 	S_box[15][15] = 0x16;
 
-	/* In S box
-	for (int i = 0; i < 16; i++) {
-		for (int j = 0; j < 16; j++) {
-			cout << setw(2) << right << hex << (int)S_box[i][j];
-			if (j == 15)
-				cout << endl;
-			else
-				cout << " ";
-		}
-	}
-	*/
+	unsigned char Inv_S_box[16][16];
+	Inv_S_box[0][0] = 0x52;
+	Inv_S_box[1][0] = 0x7c;
+	Inv_S_box[2][0] = 0x54;
+	Inv_S_box[3][0] = 0x08;
+	Inv_S_box[4][0] = 0x72;
+	Inv_S_box[5][0] = 0x6c;
+	Inv_S_box[6][0] = 0x90;
+	Inv_S_box[7][0] = 0xd0;
+	Inv_S_box[8][0] = 0x3a;
+	Inv_S_box[9][0] = 0x96;
+	Inv_S_box[10][0] = 0x47;
+	Inv_S_box[11][0] = 0xfc;
+	Inv_S_box[12][0] = 0x1f;
+	Inv_S_box[13][0] = 0x60;
+	Inv_S_box[14][0] = 0xa0;
+	Inv_S_box[15][0] = 0x17;
+	Inv_S_box[0][1] = 0x09;
+	Inv_S_box[1][1] = 0xe3;
+	Inv_S_box[2][1] = 0x7b;
+	Inv_S_box[3][1] = 0x2e;
+	Inv_S_box[4][1] = 0xf8;
+	Inv_S_box[5][1] = 0x70;
+	Inv_S_box[6][1] = 0xd8;
+	Inv_S_box[7][1] = 0x2c;
+	Inv_S_box[8][1] = 0x91;
+	Inv_S_box[9][1] = 0xac;
+	Inv_S_box[10][1] = 0xf1;
+	Inv_S_box[11][1] = 0x56;
+	Inv_S_box[12][1] = 0xdd;
+	Inv_S_box[13][1] = 0x51;
+	Inv_S_box[14][1] = 0xe0;
+	Inv_S_box[15][1] = 0x2b;
+	Inv_S_box[0][2] = 0x6a;
+	Inv_S_box[1][2] = 0x39;
+	Inv_S_box[2][2] = 0x94;
+	Inv_S_box[3][2] = 0xa1;
+	Inv_S_box[4][2] = 0xf6;
+	Inv_S_box[5][2] = 0x48;
+	Inv_S_box[6][2] = 0xab;
+	Inv_S_box[7][2] = 0x1e;
+	Inv_S_box[8][2] = 0x11;
+	Inv_S_box[9][2] = 0x74;
+	Inv_S_box[10][2] = 0x1a;
+	Inv_S_box[11][2] = 0x3e;
+	Inv_S_box[12][2] = 0xa8;
+	Inv_S_box[13][2] = 0x7f;
+	Inv_S_box[14][2] = 0x3b;
+	Inv_S_box[15][2] = 0x04;
+	Inv_S_box[0][3] = 0xd5;
+	Inv_S_box[1][3] = 0x82;
+	Inv_S_box[2][3] = 0x32;
+	Inv_S_box[3][3] = 0x66;
+	Inv_S_box[4][3] = 0x64;
+	Inv_S_box[5][3] = 0x50;
+	Inv_S_box[6][3] = 0x00;
+	Inv_S_box[7][3] = 0x8f;
+	Inv_S_box[8][3] = 0x41;
+	Inv_S_box[9][3] = 0x22;
+	Inv_S_box[10][3] = 0x71;
+	Inv_S_box[11][3] = 0x4b;
+	Inv_S_box[12][3] = 0x33;
+	Inv_S_box[13][3] = 0xa9;
+	Inv_S_box[14][3] = 0x4d;
+	Inv_S_box[15][3] = 0x7e;
+	Inv_S_box[0][4] = 0x30;
+	Inv_S_box[1][4] = 0x9b;
+	Inv_S_box[2][4] = 0xa6;
+	Inv_S_box[3][4] = 0x28;
+	Inv_S_box[4][4] = 0x86;
+	Inv_S_box[5][4] = 0xfd;
+	Inv_S_box[6][4] = 0x8c;
+	Inv_S_box[7][4] = 0xca;
+	Inv_S_box[8][4] = 0x4f;
+	Inv_S_box[9][4] = 0xe7;
+	Inv_S_box[10][4] = 0x1d;
+	Inv_S_box[11][4] = 0xc6;
+	Inv_S_box[12][4] = 0x88;
+	Inv_S_box[13][4] = 0x19;
+	Inv_S_box[14][4] = 0xae;
+	Inv_S_box[15][4] = 0xba;
+	Inv_S_box[0][5] = 0x36;
+	Inv_S_box[1][5] = 0x2f;
+	Inv_S_box[2][5] = 0xc2;
+	Inv_S_box[3][5] = 0xd9;
+	Inv_S_box[4][5] = 0x68;
+	Inv_S_box[5][5] = 0xed;
+	Inv_S_box[6][5] = 0xbc;
+	Inv_S_box[7][5] = 0x3f;
+	Inv_S_box[8][5] = 0x67;
+	Inv_S_box[9][5] = 0xad;
+	Inv_S_box[10][5] = 0x29;
+	Inv_S_box[11][5] = 0xd2;
+	Inv_S_box[12][5] = 0x07;
+	Inv_S_box[13][5] = 0xb5;
+	Inv_S_box[14][5] = 0x2a;
+	Inv_S_box[15][5] = 0x77;
+	Inv_S_box[0][6] = 0xa5;
+	Inv_S_box[1][6] = 0xff;
+	Inv_S_box[2][6] = 0x23;
+	Inv_S_box[3][6] = 0x24;
+	Inv_S_box[4][6] = 0x98;
+	Inv_S_box[5][6] = 0xb9;
+	Inv_S_box[6][6] = 0xd3;
+	Inv_S_box[7][6] = 0x0f;
+	Inv_S_box[8][6] = 0xdc;
+	Inv_S_box[9][6] = 0x35;
+	Inv_S_box[10][6] = 0xc5;
+	Inv_S_box[11][6] = 0x79;
+	Inv_S_box[12][6] = 0xc7;
+	Inv_S_box[13][6] = 0x4a;
+	Inv_S_box[14][6] = 0xf5;
+	Inv_S_box[15][6] = 0xd6;
+	Inv_S_box[0][7] = 0x38;
+	Inv_S_box[1][7] = 0x87;
+	Inv_S_box[2][7] = 0x3d;
+	Inv_S_box[3][7] = 0xb2;
+	Inv_S_box[4][7] = 0x16;
+	Inv_S_box[5][7] = 0xda;
+	Inv_S_box[6][7] = 0x0a;
+	Inv_S_box[7][7] = 0x02;
+	Inv_S_box[8][7] = 0xea;
+	Inv_S_box[9][7] = 0x85;
+	Inv_S_box[10][7] = 0x89;
+	Inv_S_box[11][7] = 0x20;
+	Inv_S_box[12][7] = 0x31;
+	Inv_S_box[13][7] = 0x0d;
+	Inv_S_box[14][7] = 0xb0;
+	Inv_S_box[15][7] = 0x26;
+	Inv_S_box[0][8] = 0xbf;
+	Inv_S_box[1][8] = 0x34;
+	Inv_S_box[2][8] = 0xee;
+	Inv_S_box[3][8] = 0x76;
+	Inv_S_box[4][8] = 0xd4;
+	Inv_S_box[5][8] = 0x5e;
+	Inv_S_box[6][8] = 0xf7;
+	Inv_S_box[7][8] = 0xc1;
+	Inv_S_box[8][8] = 0x97;
+	Inv_S_box[9][8] = 0xe2;
+	Inv_S_box[10][8] = 0x6f;
+	Inv_S_box[11][8] = 0x9a;
+	Inv_S_box[12][8] = 0xb1;
+	Inv_S_box[13][8] = 0x2d;
+	Inv_S_box[14][8] = 0xc8;
+	Inv_S_box[15][8] = 0xe1;
+	Inv_S_box[0][9] = 0x40;
+	Inv_S_box[1][9] = 0x8e;
+	Inv_S_box[2][9] = 0x4c;
+	Inv_S_box[3][9] = 0x5b;
+	Inv_S_box[4][9] = 0xa4;
+	Inv_S_box[5][9] = 0x15;
+	Inv_S_box[6][9] = 0xe4;
+	Inv_S_box[7][9] = 0xaf;
+	Inv_S_box[8][9] = 0xf2;
+	Inv_S_box[9][9] = 0xf9;
+	Inv_S_box[10][9] = 0xb7;
+	Inv_S_box[11][9] = 0xdb;
+	Inv_S_box[12][9] = 0x12;
+	Inv_S_box[13][9] = 0xe5;
+	Inv_S_box[14][9] = 0xeb;
+	Inv_S_box[15][9] = 0x69;
+	Inv_S_box[0][10] = 0xa3;
+	Inv_S_box[1][10] = 0x43;
+	Inv_S_box[2][10] = 0x95;
+	Inv_S_box[3][10] = 0xa2;
+	Inv_S_box[4][10] = 0x5c;
+	Inv_S_box[5][10] = 0x46;
+	Inv_S_box[6][10] = 0x58;
+	Inv_S_box[7][10] = 0xbd;
+	Inv_S_box[8][10] = 0xcf;
+	Inv_S_box[9][10] = 0x37;
+	Inv_S_box[10][10] = 0x62;
+	Inv_S_box[11][10] = 0xc0;
+	Inv_S_box[12][10] = 0x10;
+	Inv_S_box[13][10] = 0x7a;
+	Inv_S_box[14][10] = 0xbb;
+	Inv_S_box[15][10] = 0x14;
+	Inv_S_box[0][11] = 0x9e;
+	Inv_S_box[1][11] = 0x44;
+	Inv_S_box[2][11] = 0x0b;
+	Inv_S_box[3][11] = 0x49;
+	Inv_S_box[4][11] = 0xcc;
+	Inv_S_box[5][11] = 0x57;
+	Inv_S_box[6][11] = 0x05;
+	Inv_S_box[7][11] = 0x03;
+	Inv_S_box[8][11] = 0xce;
+	Inv_S_box[9][11] = 0xe8;
+	Inv_S_box[10][11] = 0x0e;
+	Inv_S_box[11][11] = 0xfe;
+	Inv_S_box[12][11] = 0x59;
+	Inv_S_box[13][11] = 0x9f;
+	Inv_S_box[14][11] = 0x3c;
+	Inv_S_box[15][11] = 0x63;
+	Inv_S_box[0][12] = 0x81;
+	Inv_S_box[1][12] = 0xc4;
+	Inv_S_box[2][12] = 0x42;
+	Inv_S_box[3][12] = 0x6d;
+	Inv_S_box[4][12] = 0x5d;
+	Inv_S_box[5][12] = 0xa7;
+	Inv_S_box[6][12] = 0xb8;
+	Inv_S_box[7][12] = 0x01;
+	Inv_S_box[8][12] = 0xf0;
+	Inv_S_box[9][12] = 0x1c;
+	Inv_S_box[10][12] = 0xaa;
+	Inv_S_box[11][12] = 0x78;
+	Inv_S_box[12][12] = 0x27;
+	Inv_S_box[13][12] = 0x93;
+	Inv_S_box[14][12] = 0x83;
+	Inv_S_box[15][12] = 0x55;
+	Inv_S_box[0][13] = 0xf3;
+	Inv_S_box[1][13] = 0xde;
+	Inv_S_box[2][13] = 0xfa;
+	Inv_S_box[3][13] = 0x8b;
+	Inv_S_box[4][13] = 0x65;
+	Inv_S_box[5][13] = 0x8d;
+	Inv_S_box[6][13] = 0xb3;
+	Inv_S_box[7][13] = 0x13;
+	Inv_S_box[8][13] = 0xb4;
+	Inv_S_box[9][13] = 0x75;
+	Inv_S_box[10][13] = 0x18;
+	Inv_S_box[11][13] = 0xcd;
+	Inv_S_box[12][13] = 0x80;
+	Inv_S_box[13][13] = 0xc9;
+	Inv_S_box[14][13] = 0x53;
+	Inv_S_box[15][13] = 0x21;
+	Inv_S_box[0][14] = 0xd7;
+	Inv_S_box[1][14] = 0xe9;
+	Inv_S_box[2][14] = 0xc3;
+	Inv_S_box[3][14] = 0xd1;
+	Inv_S_box[4][14] = 0xb6;
+	Inv_S_box[5][14] = 0x9d;
+	Inv_S_box[6][14] = 0x45;
+	Inv_S_box[7][14] = 0x8a;
+	Inv_S_box[8][14] = 0xe6;
+	Inv_S_box[9][14] = 0xdf;
+	Inv_S_box[10][14] = 0xbe;
+	Inv_S_box[11][14] = 0x5a;
+	Inv_S_box[12][14] = 0xec;
+	Inv_S_box[13][14] = 0x9c;
+	Inv_S_box[14][14] = 0x99;
+	Inv_S_box[15][14] = 0x0c;
+	Inv_S_box[0][15] = 0xfb;
+	Inv_S_box[1][15] = 0xcb;
+	Inv_S_box[2][15] = 0x4e;
+	Inv_S_box[3][15] = 0x25;
+	Inv_S_box[4][15] = 0x92;
+	Inv_S_box[5][15] = 0x84;
+	Inv_S_box[6][15] = 0x06;
+	Inv_S_box[7][15] = 0x6b;
+	Inv_S_box[8][15] = 0x73;
+	Inv_S_box[9][15] = 0x6e;
+	Inv_S_box[10][15] = 0x1b;
+	Inv_S_box[11][15] = 0xf4;
+	Inv_S_box[12][15] = 0x5f;
+	Inv_S_box[13][15] = 0xef;
+	Inv_S_box[14][15] = 0x61;
+	Inv_S_box[15][15] = 0x7d;
 	
 	unsigned int C[11];
-
 	C[0] = 0x00000000;
 	C[1] = 0x01000000;
 	C[2] = 0x02000000;
@@ -532,14 +816,7 @@ int main() {
 	C[9] = 0x1b000000;
 	C[10] = 0x36000000;
 
-	/* In C
-	for (int i = 0; i < 11; i++) {
-		cout << hex << C[i] << endl;
-	}
-	*/
-
 	unsigned char M_box[4][4];
-
 	M_box[0][0] = 0x02;
 	M_box[1][0] = 0x01;
 	M_box[2][0] = 0x01;
@@ -557,27 +834,35 @@ int main() {
 	M_box[2][3] = 0x03;
 	M_box[3][3] = 0x02;
 
+	unsigned char Inv_M_box[4][4];
+	Inv_M_box[0][0] = 0x0e;
+	Inv_M_box[1][0] = 0x09;
+	Inv_M_box[2][0] = 0x0d;
+	Inv_M_box[3][0] = 0x0b;
+	Inv_M_box[0][1] = 0x0b;
+	Inv_M_box[1][1] = 0x0e;
+	Inv_M_box[2][1] = 0x09;
+	Inv_M_box[3][1] = 0x0d;
+	Inv_M_box[0][2] = 0x0d;
+	Inv_M_box[1][2] = 0x0b;
+	Inv_M_box[2][2] = 0x0e;
+	Inv_M_box[3][2] = 0x09;
+	Inv_M_box[0][3] = 0x09;
+	Inv_M_box[1][3] = 0x0d;
+	Inv_M_box[2][3] = 0x0b;
+	Inv_M_box[3][3] = 0x0e;
+
 	//Input
 	string K = "Thats my Kung Fu";
-	/*
-	string KRes[11];
-	for (int i = 0; i < 11; i++) {
-		KRes[i] = "";
-	}
-
-	ExpandK(K, C, S_box, KRes);
-
-	for (int i = 0; i < 11; i++) {
-		cout << dec << "K" << setw(2) << left << i << ": ";
-		PrintHex(KRes[i]);
-	}
-	*/
-
 	string M = "Two One Nine Two";
 
+	string KRes[11];
+
+	ExpandK(K, C, S_box, KRes);
+	
 	string s = AES128(K, M, C, S_box, M_box);
 
-	
+	cout << endl << "-> Giai ma: " << InvAES128(KRes, s, Inv_S_box, Inv_M_box);
 
 	return 0;
 }
