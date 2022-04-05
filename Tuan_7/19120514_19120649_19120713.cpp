@@ -42,17 +42,16 @@ bool miller_rabin(unsigned __int64 n)
 		ran = 2 + ran % 49; 
 	}
 
-	cout << "ran =  " << ran << endl;
 
-	unsigned __int64 temp = PowerMod(ran,m,n);
+	unsigned __int64 b = PowerMod(ran,m,n);
 
-	if(temp == 1|| temp == n-1)
+	if(b == 1|| b == n-1)
 		return true;
 	
 	for(int i = 1; i < k; i++)
 	{
-		temp = PowerMod(temp,2,n);
-		if (temp == n-1)
+		b = PowerMod(b,2,n);
+		if (b == n-1)
 			return true;
 	}
 
