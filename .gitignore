@@ -1,4 +1,4 @@
 *.exe
 test
-.vs
-.vscode
+/.vs
+/.vscode
