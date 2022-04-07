@@ -13,7 +13,6 @@ unsigned __int64 PowerMod(unsigned __int64 x, unsigned __int64 b, unsigned __int
 		if (b & 1 == 1)
 		{
 			r = (r * x) % n;
-			
 		}
 		x = (x * x) % n;
 		b = b >> 1;
@@ -24,7 +23,7 @@ unsigned __int64 PowerMod(unsigned __int64 x, unsigned __int64 b, unsigned __int
 bool miller_rabin(unsigned __int64 n)
 {
 	unsigned __int64 n_temp = n - 1; 
-	int m,k = 0;
+	unsigned __int64 m = 0,k = 0;
 	while(n_temp > 0)
 	{
 		if(n_temp & 1 == 1)
