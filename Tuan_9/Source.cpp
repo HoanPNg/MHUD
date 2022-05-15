@@ -75,10 +75,10 @@ string Int32ToString4(unsigned int I) {
 }
 
 string IntsToString(unsigned int I[]) {
-	string C1 = Int32ToString4(I[1]);
-	string C2 = Int32ToString4(I[2]);
-	string C3 = Int32ToString4(I[3]);
-	string C4 = Int32ToString4(I[4]);
+	string C1 = Int32ToString4(I[0]);
+	string C2 = Int32ToString4(I[1]);
+	string C3 = Int32ToString4(I[2]);
+	string C4 = Int32ToString4(I[3]);
 
 	string res = C1 + C2 + C3 + C4;
 
@@ -156,7 +156,6 @@ string MD5(string m, unsigned int s[], unsigned int K[]) {
 
 			f = (f + A) % p;
 			f = (f + K[i]) % p;
-			cout << K[i] << endl;
 			unsigned int mint = StringToInts(mtemp, g);
 			f = (f + mint) % p;
 
@@ -178,7 +177,7 @@ string MD5(string m, unsigned int s[], unsigned int K[]) {
 	unsigned int pre[] = {a0, b0, c0, d0};
 
 	string res = IntsToString(pre);
-	PrintHex(res, 16);
+	
 	return res;
 }
 
@@ -197,14 +196,17 @@ int main() {
 	unsigned int K[64];
 
 	for (int i = 0; i < 64; i++) {
-		K[i] = (unsigned int) floor(abs(sin(i + 1)) * myPow(2, 31));
+		K[i] = floor(abs(sin(i + 1)) * myPow(2, 31));
 	}
 
+	
 	string m = "";
 
 	string mpad = padMessage(m);
 
 	string afterhash = MD5(m, s, K);
+	
+	PrintHex(afterhash, 16);
 
 	return 0;
 }
