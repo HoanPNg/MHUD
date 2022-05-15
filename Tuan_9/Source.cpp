@@ -61,6 +61,15 @@ unsigned int StringToInts(string K, unsigned int pos) {
 	return res;
 }
 
+unsigned int LittleEdianInt(unsigned int big) {
+	unsigned int i1 = ((big) << 24) & 0xff000000;
+	unsigned int i2 = ((big) << 8) & 0x00ff0000;
+	unsigned int i3 = ((big) >> 8) & 0x0000ff00;
+	unsigned int i4 = ((big) >> 24) & 0x000000ff;
+
+	return i1 + i2 + i3 + i4;
+}
+
 string Int32ToString4(unsigned int I) {
 	unsigned char c[4];
 
@@ -116,10 +125,12 @@ unsigned __int64 myPow(int x, int n) {
 }
 
 string MD5(string m, unsigned int s[], unsigned int K[]) {
+	
 	unsigned int a0 = 0x67452301;
 	unsigned int b0 = 0xefcdab89;
 	unsigned int c0 = 0x98badcfe;
 	unsigned int d0 = 0x10325476;
+
 
 	string mpad = padMessage(m);
 
@@ -137,6 +148,7 @@ string MD5(string m, unsigned int s[], unsigned int K[]) {
 
 		for (int i = 0; i < 64; i++) {
 			unsigned int f, g;
+
 			if ((0 <= i) && (i <= 15)) {
 				f = (B & C) | ((~B) & D);
 				g = i;
@@ -149,19 +161,22 @@ string MD5(string m, unsigned int s[], unsigned int K[]) {
 				f = B ^ C ^ D;
 				g = (3 * i + 5) % 16;
 			}
-			else {
+			else if ((48 <= i) && (i <= 63)) {
 				f = C ^ (B | (~D));
 				g = (7 * i) % 16;
 			}
 
 			f = (f + A) % p;
 			f = (f + K[i]) % p;
+
 			unsigned int mint = StringToInts(mtemp, g);
+			mint = LittleEdianInt(mint);
 			f = (f + mint) % p;
 
 			A = D;
 			D = C;
 			C = B;
+
 			B = (B + ((f << s[i]) | (f >> (32 - s[i])))) % p;
 		}
 
@@ -169,12 +184,9 @@ string MD5(string m, unsigned int s[], unsigned int K[]) {
 		b0 = (b0 + B) % p;
 		c0 = (c0 + C) % p;
 		d0 = (d0 + D) % p;
-		cout << hex << a0 << b0 << c0 << d0 << endl;
 	}
 
-	cout << hex << a0 << b0 << c0 << d0 << endl;
-
-	unsigned int pre[] = {a0, b0, c0, d0};
+	unsigned int pre[] = {LittleEdianInt(a0), LittleEdianInt(b0), LittleEdianInt(c0), LittleEdianInt(d0) };
 
 	string res = IntsToString(pre);
 	
@@ -195,17 +207,17 @@ int main() {
 
 	unsigned int K[64];
 
+	unsigned __int64 p = myPow(2, 31);
+
 	for (int i = 0; i < 64; i++) {
-		K[i] = floor(abs(sin(i + 1)) * myPow(2, 31));
+		K[i] = (unsigned __int64) floor(abs(sin(i + 1)) * myPow(2, 31)) % p;
 	}
 
-	
-	string m = "";
-
-	string mpad = padMessage(m);
+	string m = "fit.hcmus";
 
 	string afterhash = MD5(m, s, K);
 	
+	cout << endl << "-> Message: " << m << endl << "-> MD5    : ";
 	PrintHex(afterhash, 16);
 
 	return 0;
