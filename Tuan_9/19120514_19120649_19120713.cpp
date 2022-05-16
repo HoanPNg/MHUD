@@ -1,7 +1,7 @@
 ﻿#include<iostream>
 #include <iomanip>
 
-using namespace std; // Sửa input tại dòng 216
+using namespace std; // Sửa input tại dòng 215
 
 string addCharToString(string m, unsigned char achar) {
 	unsigned char a[1];
@@ -137,7 +137,6 @@ string MD5(string m, unsigned int s[], unsigned int K[]) {
 
 	for (int j = 0; j < n; j++) {
 		string mtemp = mpad.substr(j*64, 64);
-		PrintHex(mtemp, 64);
 
 		unsigned int A = a0;
 		unsigned int B = b0;
