@@ -1,7 +1,7 @@
-#include<iostream>
+﻿#include<iostream>
 #include <iomanip>
 
-using namespace std;
+using namespace std; // Sửa input tại dòng 216
 
 string addCharToString(string m, unsigned char achar) {
 	unsigned char a[1];
@@ -15,7 +15,7 @@ string Int64ToString(unsigned __int64 I) {
 	unsigned char c[8];
 
 	for (int i = 0; i < 8; i++) {
-		c[i] = (I >> (56 - i*8)) & 0xff;
+		c[i] = (I >> (i*8)) & 0xff;
 	}
 
 	string res(c, c + 8);
@@ -24,12 +24,13 @@ string Int64ToString(unsigned __int64 I) {
 }
 
 string padMessage(string m) {
-	unsigned __int64 len = (m.length())*8;
+	unsigned __int64 len = m.length()*8;
 	string last = Int64ToString(len);
 
 	string res = addCharToString(m, 0b10000000);
 	
 	int nlen = res.length();
+
 	int npad = nlen % 64;
 
 	if (npad <= 56) {
@@ -67,7 +68,7 @@ unsigned int LittleEdianInt(unsigned int big) {
 	unsigned int i3 = ((big) >> 8) & 0x0000ff00;
 	unsigned int i4 = ((big) >> 24) & 0x000000ff;
 
-	return i1 + i2 + i3 + i4;
+	return i1 | i2 | i3 | i4;
 }
 
 string Int32ToString4(unsigned int I) {
@@ -125,19 +126,18 @@ unsigned __int64 myPow(int x, int n) {
 }
 
 string MD5(string m, unsigned int s[], unsigned int K[]) {
-	
 	unsigned int a0 = 0x67452301;
 	unsigned int b0 = 0xefcdab89;
 	unsigned int c0 = 0x98badcfe;
 	unsigned int d0 = 0x10325476;
 
-
 	string mpad = padMessage(m);
-
+	
 	int n = mpad.length()/64;
 
 	for (int j = 0; j < n; j++) {
 		string mtemp = mpad.substr(j*64, 64);
+		PrintHex(mtemp, 64);
 
 		unsigned int A = a0;
 		unsigned int B = b0;
@@ -161,7 +161,7 @@ string MD5(string m, unsigned int s[], unsigned int K[]) {
 				f = B ^ C ^ D;
 				g = (3 * i + 5) % 16;
 			}
-			else if ((48 <= i) && (i <= 63)) {
+			else {
 				f = C ^ (B | (~D));
 				g = (7 * i) % 16;
 			}
@@ -184,9 +184,11 @@ string MD5(string m, unsigned int s[], unsigned int K[]) {
 		b0 = (b0 + B) % p;
 		c0 = (c0 + C) % p;
 		d0 = (d0 + D) % p;
+
+		cout << hex << a0 << b0 << c0 << d0 << endl;
 	}
 
-	unsigned int pre[] = {LittleEdianInt(a0), LittleEdianInt(b0), LittleEdianInt(c0), LittleEdianInt(d0) };
+	unsigned int pre[] = {LittleEdianInt(a0), LittleEdianInt(b0), LittleEdianInt(c0), LittleEdianInt(d0)};
 
 	string res = IntsToString(pre);
 	
@@ -207,10 +209,8 @@ int main() {
 
 	unsigned int K[64];
 
-	unsigned __int64 p = myPow(2, 31);
-
 	for (int i = 0; i < 64; i++) {
-		K[i] = (unsigned __int64) floor(abs(sin(i + 1)) * myPow(2, 31)) % p;
+		K[i] = floor(abs(sin(i + 1)) * pow(2, 32));
 	}
 
 	string m = "fit.hcmus";
